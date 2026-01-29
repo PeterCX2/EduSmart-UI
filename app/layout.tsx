@@ -32,10 +32,10 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className="antialiased bg-gray-50">
+      <body className="antialiased bg-gray-50 min-h-screen flex flex-col">
         {!isAuthPage && <Header />}
         
-        <main className={isAuthPage ? '' : 'container mx-auto px-4 py-6'}>
+        <main className={isAuthPage ? 'flex-1' : 'container mx-auto px-4 py-6 flex-1'}>
           {children}
         </main>
         

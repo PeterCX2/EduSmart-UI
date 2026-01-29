@@ -51,31 +51,23 @@ export default function Header() {
             <h1 className="ml-2 text-xl font-bold text-gray-800">EduSmart</h1>
 
             <nav className="hidden md:flex items-center space-x-6">
-              <Link href="/" className="text-gray-700 hover:text-blue-600 font-medium">
-                Beranda
-              </Link>
-
-              {(isAdmin || isTeacher) && (
+              {(isAdmin) && (
                 <Link href="/schools" className="text-gray-700 hover:text-blue-600 font-medium">
                   Sekolah
                 </Link>
               )}
 
-              {(isAdmin || isTeacher) && (
-                <Link href="/subjects" className="text-gray-700 hover:text-blue-600 font-medium">
-                  Mata Pelajaran
-                </Link>
-              )}
+              <Link href="/subjects" className="text-gray-700 hover:text-blue-600 font-medium">
+                Mata Pelajaran
+              </Link>
 
               <Link href="/assignments" className="text-gray-700 hover:text-blue-600 font-medium">
                 Tugas
               </Link>
 
-              {(isTeacher || isStudent) && (
-                <Link href="/submissions" className="text-gray-700 hover:text-blue-600 font-medium">
-                  Pengumpulan
-                </Link>
-              )}
+              <Link href="/submissions" className="text-gray-700 hover:text-blue-600 font-medium">
+                Pengumpulan
+              </Link>
 
               {isAdmin && (
                 <>

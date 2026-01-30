@@ -17,7 +17,7 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      window.location.href = '/dashboard';
+      window.location.href = '/schools';
     } else {
       setError(result.error);
     }

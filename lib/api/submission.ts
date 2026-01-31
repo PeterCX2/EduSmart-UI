@@ -7,7 +7,6 @@ const api = axios.create({
   baseURL: API_URL,
 })
 
-/* ================= INTERCEPTOR TOKEN ================= */
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token')
@@ -18,59 +17,44 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-/* ================= SERVICE ================= */
 export const submissionService = {
-  /**
-   * LIST submission by assignment (ADMIN / GURU)
-   */
   async getByAssignment(
     schoolId: number,
     subjectId: number,
     assignmentId: number
   ) {
-    try {
-      const response = await api.get(
-        `/schools/${schoolId}/subjects/${subjectId}/assignments/${assignmentId}/submissions`
-      )
-
-      // kalau paginate() → response.data.data.data
-      // kalau get() biasa → response.data.data
-      return response.data?.data ?? []
-    } catch (error: any) {
-      console.error(
-        '❌ getByAssignment error:',
-        error.response?.data || error.message
-      )
-      return []
-    }
+    const res = await api.get(
+      `/schools/${schoolId}/subjects/${subjectId}/assignments/${assignmentId}/submissions`
+    )
+    return res.data?.data ?? []
   },
 
-  /**
-   * GRADING (UPDATE grade + status)
-   */
   async grade(
     schoolId: number,
     subjectId: number,
     assignmentId: number,
     submissionId: number,
-    payload: {
-      grade: number
-    }
+    payload: { grade: number }
   ) {
-    try {
-      const response = await api.put(
-        `/schools/${schoolId}/subjects/${subjectId}/assignments/${assignmentId}/submissions/${submissionId}/grade`,
-        payload
-      )
+    const res = await api.put(
+      `/schools/${schoolId}/subjects/${subjectId}/assignments/${assignmentId}/submissions/${submissionId}/grade`,
+      payload
+    )
+    return res.data
+  },
 
-      return response.data
-    } catch (error: any) {
-      console.error(
-        '❌ grade submission error:',
-        error.response?.data || error.message
-      )
-      throw error
-    }
+  async saveFeedback(
+    schoolId: number,
+    subjectId: number,
+    assignmentId: number,
+    submissionId: number,
+    payload: { feedback: string }
+  ) {
+    const res = await api.post(
+      `/schools/${schoolId}/subjects/${subjectId}/assignments/${assignmentId}/submissions/${submissionId}/feedbacks/store`,
+      payload
+    )
+    return res.data
   },
 }
   

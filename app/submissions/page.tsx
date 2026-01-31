@@ -23,6 +23,7 @@ export default function AdminSubmissionPage() {
   /* ===== MODAL GRADING ===== */
   const [selected, setSelected] = useState<any | null>(null)
   const [grade, setGrade] = useState<number>(0)
+  const [feedback, setFeedback] = useState<string>('')
 
   /* ================= LOAD DATA ================= */
 
@@ -32,9 +33,7 @@ export default function AdminSubmissionPage() {
 
   useEffect(() => {
     if (!schoolId) return
-
     subjectService.getBySchool(schoolId).then(setSubjects)
-
     setAssignments([])
     setSubmissions([])
     setSubjectId(null)
@@ -43,11 +42,9 @@ export default function AdminSubmissionPage() {
 
   useEffect(() => {
     if (!schoolId || !subjectId) return
-
     assignmentService
       .getBySubject(schoolId, subjectId)
       .then(setAssignments)
-
     setSubmissions([])
     setAssignmentId(null)
   }, [subjectId])
@@ -81,8 +78,19 @@ export default function AdminSubmissionPage() {
       { grade }
     )
 
-    alert('Nilai berhasil disimpan')
+    if (feedback.trim() !== '') {
+      await submissionService.saveFeedback(
+        schoolId!,
+        subjectId!,
+        assignmentId!,
+        selected.id,
+        { feedback }
+      )
+    }
+
+    alert('Nilai & feedback berhasil disimpan')
     setSelected(null)
+    setFeedback('')
     loadSubmissions()
   }
 
@@ -145,91 +153,88 @@ export default function AdminSubmissionPage() {
       </div>
 
       {/* TABLE */}
-      <div className="overflow-x-auto">
-        <table className="w-full border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 border">ID</th>
-              <th className="p-2 border">Siswa</th>
-              <th className="p-2 border">File</th>
-              <th className="p-2 border">Status</th>
-              <th className="p-2 border">Grade</th>
-              <th className="p-2 border">Aksi</th>
-            </tr>
-          </thead>
+      <table className="w-full border">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="p-2 border">ID</th>
+            <th className="p-2 border">Siswa</th>
+            <th className="p-2 border">File</th>
+            <th className="p-2 border">Status</th>
+            <th className="p-2 border">Grade</th>
+            <th className="p-2 border">Feedback</th>
+            <th className="p-2 border">Aksi</th>
+          </tr>
+        </thead>
 
-          <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={6} className="p-4 text-center">
-                  Loading...
-                </td>
-              </tr>
-            )}
-
-            {!loading && submissions.length === 0 && (
-              <tr>
-                <td colSpan={6} className="p-4 text-center">
-                  Belum ada submission
-                </td>
-              </tr>
-            )}
-
-            {submissions.map((s) => (
-              <tr key={s.id}>
-                <td className="p-2 border">{s.id}</td>
-                <td className="p-2 border">
-                  {s.user?.name ?? `User #${s.user_id}`}
-                </td>
-                <td className="p-2 border">
-                  {s.file_urls?.map((f: any, i: number) => (
-                    <a
-                      key={i}
-                      href={f.url}
-                      target="_blank"
-                      className="block text-blue-600 underline"
-                    >
-                      {f.original_name}
-                    </a>
-                  ))}
-                </td>
-                <td className="p-2 border">{s.status}</td>
-                <td className="p-2 border">
-                  {s.grade ?? '-'}
-                </td>
-                <td className="p-2 border">
-                  <button
-                    onClick={() => {
-                      setSelected(s)
-                      setGrade(s.grade ?? 0)
-                    }}
-                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded"
+        <tbody>
+          {submissions.map((s) => (
+            <tr key={s.id}>
+              <td className="p-2 border">{s.id}</td>
+              <td className="p-2 border">
+                {s.user?.name ?? `User #${s.user_id}`}
+              </td>
+              <td className="p-2 border">
+                {s.file_urls?.map((f: any, i: number) => (
+                  <a
+                    key={i}
+                    href={f.url}
+                    target="_blank"
+                    className="block text-blue-600 underline"
                   >
-                    <Eye size={16} />
-                    Nilai
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    {f.original_name}
+                  </a>
+                ))}
+              </td>
+              <td className="p-2 border">{s.status}</td>
+              <td className="p-2 border">{s.grade ?? '-'}</td>
+              <td className="p-2 border">
+                {s.feedback?.feedback ?? (
+                  <span className="italic text-gray-400">
+                    Belum ada
+                  </span>
+                )}
+              </td>
+              <td className="p-2 border">
+                <button
+                  onClick={() => {
+                    setSelected(s)
+                    setGrade(s.grade ?? 0)
+                    setFeedback(s.feedback?.feedback ?? '')
+                  }}
+                  className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded"
+                >
+                  <Eye size={16} />
+                  Nilai
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-      {/* MODAL GRADING */}
+      {/* MODAL */}
       {selected && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-[400px]">
-            <h2 className="font-bold text-lg mb-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div className="bg-white p-6 rounded w-[400px]">
+            <h2 className="font-bold mb-3">
               Nilai Submission #{selected.id}
             </h2>
 
             <input
               type="number"
+              className="border p-2 w-full mb-3"
+              value={grade}
               min={0}
               max={100}
-              className="border p-2 w-full mb-4"
-              value={grade}
               onChange={(e) => setGrade(+e.target.value)}
+            />
+
+            <textarea
+              className="border p-2 w-full mb-4"
+              rows={3}
+              placeholder="Feedback..."
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
             />
 
             <div className="flex justify-end gap-2">

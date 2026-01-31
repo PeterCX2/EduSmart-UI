@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, School, AlertCircle, Check } from "lucide-react";
+import { ArrowLeft, Save, School, AlertCircle, Check, User } from "lucide-react";
 
 const API_URL = "http://edusmart.test/api";
 
 interface School {
+  id: number;
+  name: string;
+}
+
+interface Role {
   id: number;
   name: string;
 }
@@ -16,6 +21,7 @@ interface UserData {
   name: string;
   email: string;
   schools: School[];
+  roles: Role[];
 }
 
 export default function AssignSchoolsPage() {
@@ -30,6 +36,24 @@ export default function AssignSchoolsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // LOGIKA SEDERHANA: 
+  // Jika user punya hanya 1 role DAN role itu adalah siswa, maka batasi 1 sekolah
+  // Selain itu, boleh banyak sekolah
+  const isSingleStudent = () => {
+    if (!user?.roles) return false;
+    
+    // Jika jumlah role bukan 1, berarti bukan siswa tunggal
+    if (user.roles.length !== 1) return false;
+    
+    // Cek apakah satu-satunya role adalah siswa
+    const singleRole = user.roles[0];
+    const studentRoles = ['siswa', 'student', 'pelajar', 'murid'];
+    
+    return studentRoles.includes(singleRole.name.toLowerCase());
+  };
+
+  const singleStudent = isSingleStudent();
 
   useEffect(() => {
     if (!userId) return;
@@ -92,15 +116,29 @@ export default function AssignSchoolsPage() {
   };
 
   const toggleSchool = (schoolId: number) => {
-    setSelected((prev) =>
-      prev.includes(schoolId)
-        ? prev.filter((id) => id !== schoolId)
-        : [...prev, schoolId]
-    );
+    if (singleStudent) {
+      // Untuk siswa tunggal: single select (radio button behavior)
+      setSelected(prev => {
+        if (prev.includes(schoolId)) {
+          return []; // Boleh kosong jika klik lagi
+        } else {
+          return [schoolId]; // Hanya satu yang dipilih
+        }
+      });
+    } else {
+      // Untuk user lain: multiple select
+      setSelected((prev) =>
+        prev.includes(schoolId)
+          ? prev.filter((id) => id !== schoolId)
+          : [...prev, schoolId]
+      );
+    }
   };
 
   const selectAll = () => {
-    setSelected(schools.map(s => s.id));
+    if (!singleStudent) {
+      setSelected(schools.map(s => s.id));
+    }
   };
 
   const clearAll = () => {
@@ -111,12 +149,14 @@ export default function AssignSchoolsPage() {
     return schools.length > 0 && selected.length === schools.length;
   };
 
-  const isIndeterminate = () => {
-    return selected.length > 0 && selected.length < schools.length;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validasi untuk siswa tunggal
+    if (singleStudent && selected.length > 1) {
+      setError("Students with only student role can only be assigned to one school");
+      return;
+    }
     
     try {
       setSaving(true);
@@ -129,9 +169,9 @@ export default function AssignSchoolsPage() {
         return;
       }
 
-      // ✅ Sekarang kirim school_ids (plural) sebagai array
+      // ✅ Kirim school_ids (plural) sebagai array
       const payload = {
-        school_ids: selected // Array of IDs
+        school_ids: selected
       };
 
       console.log("Submitting with payload:", payload);
@@ -222,6 +262,7 @@ export default function AssignSchoolsPage() {
 
   // Hitung statistik
   const selectedSchools = schools.filter(s => selected.includes(s.id));
+  const userRoleNames = user?.roles?.map(r => r.name).join(', ') || 'No roles';
 
   return (
     <div className="p-6">
@@ -235,14 +276,61 @@ export default function AssignSchoolsPage() {
           </button>
           
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-              <School size={24} className="text-green-600" />
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+              singleStudent ? "bg-yellow-100" : "bg-green-100"
+            }`}>
+              <School size={24} className={singleStudent ? "text-yellow-600" : "text-green-600"} />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Assign Schools</h1>
               <p className="text-gray-600">
                 Manage school assignments for <span className="font-semibold">{user?.name}</span>
               </p>
+              <div className="flex items-center gap-2 mt-1">
+                <User size={14} className="text-gray-400" />
+                <span className="text-sm text-gray-500">
+                  Roles: {userRoleNames} 
+                  {singleStudent && " (Single Student Role)"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Panel */}
+          <div className={`mt-4 p-4 rounded-lg border ${
+            singleStudent 
+              ? "bg-yellow-50 border-yellow-200" 
+              : "bg-blue-50 border-blue-200"
+          }`}>
+            <div className="flex items-start gap-3">
+              <div className={`p-2 rounded ${
+                singleStudent ? "bg-yellow-100" : "bg-blue-100"
+              }`}>
+                <School size={18} className={singleStudent ? "text-yellow-600" : "text-blue-600"} />
+              </div>
+              <div>
+                <h3 className={`font-medium ${
+                  singleStudent ? "text-yellow-800" : "text-blue-800"
+                }`}>
+                  {singleStudent 
+                    ? "Single Student Account" 
+                    : "Regular / Multi-Role Account"
+                  }
+                </h3>
+                <p className={`text-sm mt-1 ${
+                  singleStudent ? "text-yellow-700" : "text-blue-700"
+                }`}>
+                  {singleStudent 
+                    ? "This user has ONLY ONE role which is Student. Maximum ONE school allowed."
+                    : "This user can be assigned to MULTIPLE schools."
+                  }
+                </p>
+                {singleStudent && selected.length > 1 && (
+                  <p className="text-sm text-red-600 mt-1 font-medium">
+                    ⚠️ Please select only one school for single student accounts
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -269,22 +357,27 @@ export default function AssignSchoolsPage() {
                   Available Schools
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  Select multiple schools for this user
+                  {singleStudent 
+                    ? "Select ONE school for this student" 
+                    : "Select multiple schools for this user"
+                  }
                 </p>
               </div>
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={selectAll}
-                  disabled={isAllSelected()}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg ${
-                    isAllSelected()
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  }`}
-                >
-                  Select All
-                </button>
+                {!singleStudent && (
+                  <button
+                    type="button"
+                    onClick={selectAll}
+                    disabled={isAllSelected()}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                      isAllSelected()
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                    }`}
+                  >
+                    Select All
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={clearAll}
@@ -302,21 +395,39 @@ export default function AssignSchoolsPage() {
 
             {/* Selection Summary */}
             {selected.length > 0 && (
-              <div className="mt-4 p-3 bg-white border border-green-200 rounded-lg">
-                <p className="text-sm font-medium text-green-800 mb-2">
-                  Selected Schools ({selected.length}):
+              <div className={`mt-4 p-3 rounded-lg border ${
+                singleStudent 
+                  ? "bg-yellow-50 border-yellow-200" 
+                  : "bg-green-50 border-green-200"
+              }`}>
+                <p className={`text-sm font-medium mb-2 ${
+                  singleStudent ? "text-yellow-800" : "text-green-800"
+                }`}>
+                  {singleStudent 
+                    ? "Selected School:" 
+                    : `Selected Schools (${selected.length}):`
+                  }
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {selectedSchools.map(school => (
                     <span 
                       key={school.id} 
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
+                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm ${
+                        singleStudent
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-green-100 text-green-800"
+                      }`}
                     >
                       <Check size={12} />
                       {school.name}
                     </span>
                   ))}
                 </div>
+                {singleStudent && selected.length > 0 && (
+                  <p className="text-xs text-yellow-600 mt-2">
+                    ✓ One school selected (maximum for single student accounts)
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -339,18 +450,36 @@ export default function AssignSchoolsPage() {
                       key={school.id}
                       className={`relative flex items-start p-4 border rounded-xl cursor-pointer transition-all ${
                         isSelected
-                          ? "border-blue-300 bg-blue-50 shadow-sm"
+                          ? singleStudent
+                            ? "border-yellow-300 bg-yellow-50 shadow-sm"
+                            : "border-green-300 bg-green-50 shadow-sm"
                           : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                       }`}
                     >
-                      <div className="flex items-center h-5 min-h-5">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSchool(school.id)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </div>
+                      {/* Input type berdasarkan role */}
+                      {singleStudent ? (
+                        // Radio button untuk siswa tunggal (single select)
+                        <div className="flex items-center h-5 min-h-5">
+                          <input
+                            type="radio"
+                            name="school"
+                            checked={isSelected}
+                            onChange={() => toggleSchool(school.id)}
+                            className="w-4 h-4 text-yellow-600 border-gray-300 focus:ring-yellow-500"
+                          />
+                        </div>
+                      ) : (
+                        // Checkbox untuk user lain (multiple select)
+                        <div className="flex items-center h-5 min-h-5">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSchool(school.id)}
+                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                          />
+                        </div>
+                      )}
+                      
                       <div className="ml-3 flex-1">
                         <span className="block text-sm font-medium text-gray-900">
                           {school.name}
@@ -361,7 +490,9 @@ export default function AssignSchoolsPage() {
                       </div>
                       {isSelected && (
                         <div className="absolute top-2 right-2">
-                          <Check size={16} className="text-blue-600" />
+                          <Check size={16} className={
+                            singleStudent ? "text-yellow-600" : "text-green-600"
+                          } />
                         </div>
                       )}
                     </label>
@@ -382,8 +513,14 @@ export default function AssignSchoolsPage() {
               </button>
               <button
                 type="submit"
-                disabled={saving}
-                className="flex-1 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                disabled={saving || (singleStudent && selected.length > 1)}
+                className={`flex-1 px-6 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  singleStudent
+                    ? "bg-yellow-600 text-white hover:bg-yellow-700"
+                    : "bg-green-600 text-white hover:bg-green-700"
+                } ${saving || (singleStudent && selected.length > 1) 
+                  ? "opacity-50 cursor-not-allowed" 
+                  : ""}`}
               >
                 {saving ? (
                   <>
@@ -393,13 +530,19 @@ export default function AssignSchoolsPage() {
                 ) : (
                   <>
                     <Save size={18} />
-                    Save School Assignments ({selected.length})
+                    {singleStudent 
+                      ? `Save School Assignment ${selected.length > 0 ? `(${selected.length})` : ''}`
+                      : `Save School Assignments (${selected.length})`
+                    }
                   </>
                 )}
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-4 text-center">
-              Note: User can be assigned to multiple schools. Uncheck all to remove all schools.
+              {singleStudent 
+                ? "Note: Users with ONLY ONE student role can be assigned to ONE school maximum. Select none to remove school assignment."
+                : "Note: This user can be assigned to multiple schools. Uncheck all to remove all schools."
+              }
             </p>
           </div>
         </form>

@@ -279,14 +279,6 @@ export default function EditUserPage() {
               <p className="text-gray-600">Update {user?.name}'s account</p>
             </div>
           </div>
-          
-          {/* Debug info */}
-          <div className="mt-4 p-3 bg-gray-50 rounded text-sm">
-            <p>User ID: {userId}</p>
-            <p>Selected roles: {formData.roles.join(', ')}</p>
-            <p>Selected role names: {selectedRoleNames.join(', ')}</p>
-            <p>Available roles: {availableRoles.length}</p>
-          </div>
         </div>
 
         {error && (

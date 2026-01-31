@@ -17,7 +17,6 @@ api.interceptors.request.use((config) => {
 });
 
 export const subjectService = {
-  // Get subjects by school
   getBySchool: async (schoolId: number) => {
     try {
       const response = await api.get(`/school/${schoolId}/subject`);

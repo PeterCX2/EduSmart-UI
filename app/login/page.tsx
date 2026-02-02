@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { login } from '@/lib/api';
 
 export default function LoginPage() {
@@ -8,6 +8,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isChecking, setIsChecking] = useState(true);
+
+  // CEK JIKA SUDAH LOGIN, REDIRECT SEKALI SAJA
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('✅ Already logged in, redirecting...');
+      window.location.href = '/schools';
+    } else {
+      setIsChecking(false);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,21 +29,40 @@ export default function LoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      window.location.href = '/schools';
+      console.log('✅ Login successful, redirecting...');
+      // TUNGGU SEBENTAR LALU REDIRECT
+      setTimeout(() => {
+        window.location.href = '/schools';
+      }, 100);
     } else {
-      setError(result.error);
+      setError(result.error || 'Login failed');
     }
 
     setLoading(false);
   };
+
+  // TAMPILKAN LOADING SELAGI CHECKING
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-center text-gray-900">
-            Login
+            EduSmart Login
           </h1>
+          <p className="text-center text-gray-600 mt-2">
+            Aplikasi Pengumpulan Tugas
+          </p>
         </div>
 
         {error && (
@@ -47,7 +78,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 text-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="superadmin@gmail.com"
               required
             />
@@ -59,7 +90,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 text-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
             />
           </div>
@@ -72,6 +103,20 @@ export default function LoginPage() {
             {loading ? 'Loading...' : 'Login'}
           </button>
         </form>
+
+        {/* Debug button */}
+        <div className="text-center">
+          <button
+            onClick={() => {
+              console.log('🔍 Current localStorage:');
+              console.log('Token:', localStorage.getItem('token'));
+              console.log('User:', localStorage.getItem('user'));
+            }}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            Debug LocalStorage
+          </button>
+        </div>
       </div>
     </div>
   );

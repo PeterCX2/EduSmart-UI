@@ -290,7 +290,7 @@ export default function CreateUserPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 text-gray-600">
           <div className="mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
             <div className="space-y-4">

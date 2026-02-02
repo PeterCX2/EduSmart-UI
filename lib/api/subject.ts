@@ -19,10 +19,32 @@ api.interceptors.request.use((config) => {
 export const subjectService = {
   getBySchool: async (schoolId: number) => {
     try {
+      console.log(`📡 Fetching subjects for school ${schoolId}...`);
+      
       const response = await api.get(`/school/${schoolId}/subject`);
-      return response.data?.data || response.data || [];
+      
+      console.log(`✅ Subjects API response for school ${schoolId}:`, response.data);
+      
+      // Handle different response structures
+      let subjects = [];
+      if (response.data?.data?.data) {
+        subjects = response.data.data.data;
+      } else if (response.data?.data) {
+        subjects = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        subjects = response.data;
+      }
+      
+      console.log(`📊 Extracted ${subjects.length} subjects for school ${schoolId}`);
+      return subjects;
     } catch (error: any) {
-      console.error(`Error get subjects for school ${schoolId}:`, error);
+      console.error(`❌ Error getting subjects for school ${schoolId}:`, {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Return empty array instead of throwing error
       return [];
     }
   },

@@ -293,7 +293,7 @@ export default function CreateRolePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 text-gray-600">
           {/* Role Name */}
           <div className="mb-8">
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">

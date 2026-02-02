@@ -12,7 +12,7 @@ import {
   Mail,
   Shield,
   Calendar,
-  Users,
+  Users as UsersIcon,
   Filter,
   ChevronDown,
   CheckCircle,
@@ -48,8 +48,24 @@ export default function UsersPage() {
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.roles?.[0]?.name || "");
+        
+        if (user.roles?.[0]?.name !== "super-admin") {
+          router.push("/assignments");
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing user:', error);
+      }
+    }
+    
     fetchUsers();
   }, []);
 
@@ -96,7 +112,6 @@ export default function UsersPage() {
         setUsers(usersData);
         setFilteredUsers(usersData);
         
-        // Extract unique roles for filter
         const roles = new Set<string>();
         usersData.forEach((user: UserType) => {
           user.roles.forEach(role => roles.add(role.name));
@@ -114,7 +129,6 @@ export default function UsersPage() {
   useEffect(() => {
     let filtered = users;
 
-    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(user =>
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -122,7 +136,6 @@ export default function UsersPage() {
       );
     }
 
-    // Apply role filter
     if (roleFilter !== "all") {
       filtered = filtered.filter(user =>
         user.roles.some(role => role.name === roleFilter)
@@ -170,7 +183,23 @@ export default function UsersPage() {
     });
   };
 
-  // Loading state
+  if (userRole && userRole !== "super-admin") {
+    return (
+      <div className="p-6">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
+          <p className="text-gray-600">Only super-admin can access this page.</p>
+          <button
+            onClick={() => router.push("/assignments")}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Assignments
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="p-6">
@@ -182,7 +211,6 @@ export default function UsersPage() {
     );
   }
 
-  // Calculate stats
   const totalUsers = users.length;
   const verifiedUsers = users.filter(u => u.email_verified_at).length;
   const adminUsers = users.filter(u => 
@@ -192,7 +220,6 @@ export default function UsersPage() {
   return (
     <div className="p-6">
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Users Management</h1>
@@ -207,7 +234,6 @@ export default function UsersPage() {
           </button>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-700 font-medium">Error</p>
@@ -215,12 +241,11 @@ export default function UsersPage() {
           </div>
         )}
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Users size={20} className="text-blue-600" />
+                <UsersIcon size={20} className="text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Users</p>
@@ -242,9 +267,7 @@ export default function UsersPage() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Search */}
           <div className="bg-white p-4 rounded-lg border shadow-sm">
             <label className="text-sm text-gray-600 mb-2 block">
               Search Users
@@ -264,7 +287,6 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {/* Role Filter */}
           <div className="bg-white p-4 rounded-lg border shadow-sm">
             <label className="text-sm text-gray-600 mb-2 block">
               Filter by Role
@@ -294,7 +316,6 @@ export default function UsersPage() {
           </div>
         </div>
 
-        {/* Table / Empty State */}
         {filteredUsers.length === 0 ? (
           <div className="bg-white p-8 rounded-lg border text-center">
             <User size={32} className="mx-auto text-gray-400 mb-3" />
@@ -421,7 +442,6 @@ export default function UsersPage() {
                         </button>
                       </div>
                     </td>
-
                   </tr>
                 ))}
               </tbody>

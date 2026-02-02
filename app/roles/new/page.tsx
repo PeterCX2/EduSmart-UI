@@ -390,7 +390,7 @@ export default function CreateRolePage() {
           <div className="flex gap-4 pt-6 border-t border-gray-200">
             <button
               type="button"
-              onClick={() => router.push("/admin/roles")}
+              onClick={() => router.push("/roles")}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               disabled={submitting}
             >

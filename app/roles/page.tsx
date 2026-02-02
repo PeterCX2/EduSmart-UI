@@ -17,7 +17,6 @@ import {
   Trash,
 } from "lucide-react";
 
-// Type definitions
 interface Permission {
   id: number;
   name: string;
@@ -33,15 +32,33 @@ interface Role {
 export default function RolesPage() {
   const router = useRouter();
 
-  // State management
   const [roles, setRoles] = useState<Role[]>([]);
   const [filteredRoles, setFilteredRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [userRole, setUserRole] = useState("");
 
-  // Fetch data
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.roles?.[0]?.name || "");
+        
+        if (user.roles?.[0]?.name !== "super-admin") {
+          router.push("/assignments");
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing user:', error);
+      }
+    }
+    
+    fetchRoles();
+  }, []);
+
   const fetchRoles = async () => {
     try {
       setLoading(true);
@@ -75,11 +92,6 @@ export default function RolesPage() {
   };
 
   useEffect(() => {
-    fetchRoles();
-  }, []);
-
-  // Handle search
-  useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredRoles(roles);
     } else {
@@ -93,7 +105,6 @@ export default function RolesPage() {
     }
   }, [searchQuery, roles]);
 
-  // Handle delete
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Are you sure you want to delete role "${name}"?`)) return;
 
@@ -113,17 +124,15 @@ export default function RolesPage() {
 
       if (!response.ok) throw new Error("Gagal menghapus role");
 
-      // Remove from local state
       setRoles(prev => prev.filter(role => role.id !== id));
     } catch (err: any) {
       alert(err.message || "Gagal menghapus role");
-      fetchRoles(); // Refresh data on error
+      fetchRoles();
     } finally {
       setDeleteLoading(null);
     }
   };
 
-  // Format permissions
   const formatPermissions = (permissions: Permission[]) => {
     const grouped: Record<string, string[]> = {};
     const order = ["view", "create", "edit", "delete"];
@@ -150,7 +159,6 @@ export default function RolesPage() {
     });
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
@@ -160,7 +168,23 @@ export default function RolesPage() {
     });
   };
 
-  // Loading state
+  if (userRole && userRole !== "super-admin") {
+    return (
+      <div className="p-6">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
+          <p className="text-gray-600">Only super-admin can access this page.</p>
+          <button
+            onClick={() => router.push("/assignments")}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Assignments
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="p-6">
@@ -174,9 +198,7 @@ export default function RolesPage() {
 
   return (
     <div className="p-6">
-      {/* Main Container */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Roles List</h1>
@@ -191,7 +213,6 @@ export default function RolesPage() {
           </button>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-700 font-medium">Error</p>
@@ -199,7 +220,6 @@ export default function RolesPage() {
           </div>
         )}
 
-        {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-md">
             <Search
@@ -216,7 +236,6 @@ export default function RolesPage() {
           </div>
         </div>
 
-        {/* Stats Card */}
         <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
             <div className="flex items-center gap-3">
@@ -263,7 +282,6 @@ export default function RolesPage() {
           </div>
         </div>
 
-        {/* Table */}
         {filteredRoles.length === 0 ? (
           <div className="bg-white p-8 rounded-lg border text-center">
             <Shield size={32} className="mx-auto text-gray-400 mb-3" />
@@ -381,15 +399,6 @@ export default function RolesPage() {
             </table>
           </div>
         )}
-
-        {/* Pagination (if needed in future) */}
-        {/* <div className="mt-6 flex justify-center">
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border rounded">Previous</button>
-            <button className="px-3 py-1 border bg-blue-600 text-white rounded">1</button>
-            <button className="px-3 py-1 border rounded">Next</button>
-          </div>
-        </div> */}
       </div>
     </div>
   );

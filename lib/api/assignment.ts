@@ -16,23 +16,55 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error("API Error:", {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    return Promise.reject(error);
+  }
+);
+
 export const assignmentService = {
   getBySubject: async (schoolId: number, subjectId: number) => {
     try {
+      console.log(`📡 Calling API: GET /school/${schoolId}/subject/${subjectId}/assignment`);
+      
       const response = await api.get(
         `/school/${schoolId}/subject/${subjectId}/assignment`
       );
 
-      const assignments = response.data?.data?.data || [];
+      console.log(`✅ API Response for assignments:`, {
+        schoolId,
+        subjectId,
+        response: response.data
+      });
 
-      console.log(
-        `✅ Assignments school ${schoolId} subject ${subjectId}:`,
-        assignments
-      );
+      // Handle different response structures
+      let assignments = [];
+      if (response.data?.data?.data) {
+        assignments = response.data.data.data;
+      } else if (response.data?.data) {
+        assignments = response.data.data;
+      } else if (Array.isArray(response.data)) {
+        assignments = response.data;
+      }
 
+      console.log(`📊 Extracted assignments:`, assignments);
       return assignments;
     } catch (error: any) {
-      console.error("❌ getBySubject error:", error.response?.data || error.message);
+      console.error("❌ getBySubject error:", {
+        schoolId,
+        subjectId,
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
       return [];
     }
   },

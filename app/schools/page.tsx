@@ -16,16 +16,24 @@ import {
 export default function SchoolsPage() {
   const router = useRouter();
 
-  // DATA
   const [schools, setSchools] = useState<any[]>([]);
-
-  // UI STATE
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteLoading, setDeleteLoading] = useState<number | null>(null);
+  const [userRole, setUserRole] = useState("");
 
   useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.roles?.[0]?.name || "");
+      } catch (error) {
+        console.error("Error parsing user:", error);
+      }
+    }
+    
     fetchData();
   }, []);
 
@@ -77,7 +85,6 @@ export default function SchoolsPage() {
     }
   };
 
-  // FILTER
   const filteredSchools = schools.filter((school) =>
     school.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -87,7 +94,23 @@ export default function SchoolsPage() {
     0
   );
 
-  // LOADING
+  if (userRole && userRole !== "super-admin") {
+    return (
+      <div className="p-6">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
+          <p className="text-gray-600">Only super-admin can access this page.</p>
+          <button
+            onClick={() => router.push("/assignments")}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Assignments
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="p-6">
@@ -101,7 +124,6 @@ export default function SchoolsPage() {
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-xl">
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Schools</h1>
@@ -116,7 +138,6 @@ export default function SchoolsPage() {
         </button>
       </div>
 
-      {/* ERROR */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700 font-medium">Error</p>
@@ -124,9 +145,7 @@ export default function SchoolsPage() {
         </div>
       )}
 
-      {/* FILTER + STATS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* SEARCH */}
         <div className="bg-white p-4 rounded-lg border shadow-sm">
           <label className="text-sm text-gray-600 mb-2 block">
             Cari Sekolah
@@ -145,7 +164,6 @@ export default function SchoolsPage() {
           </div>
         </div>
 
-        {/* STATS */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -166,7 +184,6 @@ export default function SchoolsPage() {
         </div>
       </div>
 
-      {/* TABLE / EMPTY */}
       {filteredSchools.length === 0 ? (
         <div className="bg-white p-8 rounded-lg border text-center">
           <Building size={32} className="mx-auto text-gray-400 mb-3" />
